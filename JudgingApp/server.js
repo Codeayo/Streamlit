@@ -1,3 +1,22 @@
+// ✅ Setup at the top
+const express = require("express");
+const path = require("path");
+const cors = require("cors");
+const db = require("./db");
+const bcrypt = require("bcrypt");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// ✅ Serve frontend
+app.use(express.static(path.join(__dirname, "public")));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// ✅ ROUTES START HERE
+
 app.post("/api/student/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -13,6 +32,7 @@ app.post("/api/student/login", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 app.get("/api/events/judge/:judgeId", async (req, res) => {
   const { judgeId } = req.params;
   try {
@@ -27,6 +47,7 @@ app.get("/api/events/judge/:judgeId", async (req, res) => {
     res.status(500).json({ error: "Could not fetch events" });
   }
 });
+
 app.get("/api/projects/event/:eventId", async (req, res) => {
   const { eventId } = req.params;
   try {
@@ -36,6 +57,7 @@ app.get("/api/projects/event/:eventId", async (req, res) => {
     res.status(500).json({ error: "Could not fetch projects" });
   }
 });
+
 app.post("/api/projects/review", async (req, res) => {
   const { judgeId, projectId, score, feedback } = req.body;
   try {
@@ -50,7 +72,7 @@ app.post("/api/projects/review", async (req, res) => {
     res.status(500).json({ error: "Could not save review" });
   }
 });
-// Student project + feedback fetch
+
 app.get("/api/projects/student/:studentId", async (req, res) => {
   const { studentId } = req.params;
 
@@ -78,38 +100,34 @@ app.get("/api/projects/student/:studentId", async (req, res) => {
     res.status(500).json({ error: "Could not fetch student projects." });
   }
 });
-// GET all events
+
 app.get("/api/events", async (req, res) => {
   const [rows] = await db.promise().query("SELECT * FROM events ORDER BY date DESC");
   res.json(rows);
 });
 
-// POST new event
 app.post("/api/events", async (req, res) => {
   const { name, date } = req.body;
   await db.promise().query("INSERT INTO events (name, date) VALUES (?, ?)", [name, date]);
   res.json({ message: "Event created" });
 });
 
-// PUT update event
 app.put("/api/events/:id", async (req, res) => {
   const { name, date } = req.body;
   await db.promise().query("UPDATE events SET name = ?, date = ? WHERE id = ?", [name, date, req.params.id]);
   res.json({ message: "Event updated" });
 });
 
-// DELETE event
 app.delete("/api/events/:id", async (req, res) => {
   await db.promise().query("DELETE FROM events WHERE id = ?", [req.params.id]);
   res.json({ message: "Event deleted" });
 });
-// GET all judges
+
 app.get("/api/judges", async (req, res) => {
   const [rows] = await db.promise().query("SELECT id FROM judges");
   res.json(rows);
 });
 
-// POST a judge (admin create)
 app.post("/api/judges", async (req, res) => {
   const { id, password } = req.body;
   const [exists] = await db.promise().query("SELECT * FROM judges WHERE id = ?", [id]);
@@ -120,13 +138,11 @@ app.post("/api/judges", async (req, res) => {
   res.json({ message: "Judge created" });
 });
 
-// DELETE a judge
 app.delete("/api/judges/:id", async (req, res) => {
   await db.promise().query("DELETE FROM judges WHERE id = ?", [req.params.id]);
   res.json({ message: "Judge deleted" });
 });
 
-// POST assign judge to event
 app.post("/api/judge_event", async (req, res) => {
   const { judgeId, eventId } = req.body;
   await db.promise().query(
@@ -135,13 +151,12 @@ app.post("/api/judge_event", async (req, res) => {
   );
   res.json({ message: "Judge assigned" });
 });
-// Get all projects
+
 app.get("/api/projects", async (req, res) => {
   const [rows] = await db.promise().query("SELECT * FROM projects");
   res.json(rows);
 });
 
-// Add project
 app.post("/api/projects", async (req, res) => {
   const { title, description, event_id, user_id } = req.body;
   await db.promise().query(
@@ -151,11 +166,11 @@ app.post("/api/projects", async (req, res) => {
   res.json({ message: "Project added" });
 });
 
-// Delete project
 app.delete("/api/projects/:id", async (req, res) => {
   await db.promise().query("DELETE FROM projects WHERE id = ?", [req.params.id]);
   res.json({ message: "Project deleted" });
 });
+
 app.post("/api/student/register", async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -171,6 +186,7 @@ app.post("/api/student/register", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 app.get("/api/leaderboard", async (req, res) => {
   try {
     const [rows] = await db.promise().query(`
@@ -190,7 +206,7 @@ app.get("/api/leaderboard", async (req, res) => {
     res.status(500).json({ error: "Could not load leaderboard" });
   }
 });
-// Update student profile
+
 app.put("/api/student/update", async (req, res) => {
   const { id, name, password } = req.body;
   const hash = password ? await bcrypt.hash(password, 10) : null;
@@ -205,7 +221,6 @@ app.put("/api/student/update", async (req, res) => {
   res.json({ message: "Profile updated" });
 });
 
-// Update judge profile
 app.put("/api/judge/update", async (req, res) => {
   const { id, name, password } = req.body;
   const hash = password ? await bcrypt.hash(password, 10) : null;
@@ -219,6 +234,7 @@ app.put("/api/judge/update", async (req, res) => {
   await db.promise().query(query, params);
   res.json({ message: "Password updated" });
 });
+
 app.get("/api/project/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -244,6 +260,7 @@ app.get("/api/project/:id", async (req, res) => {
     res.status(500).json({ error: "Could not fetch project details" });
   }
 });
+
 app.get("/api/admin/analytics", async (req, res) => {
   try {
     const [[{ totalStudents }]] = await db.promise().query("SELECT COUNT(*) AS totalStudents FROM students");
@@ -280,4 +297,10 @@ app.get("/api/admin/analytics", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Analytics failed" });
   }
+});
+
+// ✅ Start Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
