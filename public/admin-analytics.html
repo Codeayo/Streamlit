@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Analytics</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #373b44, #4286f4);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .container {
+      background: white;
+      color: #333;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    .stat-box {
+      margin: 20px 0;
+      font-size: 18px;
+    }
+
+    .stat-box strong {
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Admin Analytics</h1>
+    <div class="stat-box">Total Students: <strong id="studentCount">-</strong></div>
+    <div class="stat-box">Total Judges: <strong id="judgeCount">-</strong></div>
+    <div class="stat-box">Total Events: <strong id="eventCount">-</strong></div>
+    <div class="stat-box">Total Projects: <strong id="projectCount">-</strong></div>
+    <hr/>
+    <div class="stat-box">Event with Most Projects: <strong id="topEvent">-</strong></div>
+    <div class="stat-box">Top Rated Project: <strong id="topProject">-</strong></div>
+  </div>
+
+  <script>
+    async function loadStats() {
+      const res = await fetch("http://localhost:3000/api/admin/analytics");
+      const data = await res.json();
+
+      document.getElementById("studentCount").textContent = data.totalStudents;
+      document.getElementById("judgeCount").textContent = data.totalJudges;
+      document.getElementById("eventCount").textContent = data.totalEvents;
+      document.getElementById("projectCount").textContent = data.totalProjects;
+      document.getElementById("topEvent").textContent = data.topEvent || "N/A";
+      document.getElementById("topProject").textContent = data.topProject || "N/A";
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
