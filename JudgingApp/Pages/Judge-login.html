@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Judge Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #667eea, #764ba2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .form-container {
+      background: #fff;
+      padding: 2.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #1e293b;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      text-align: left;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .btn {
+      margin-top: 1.5rem;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      width: 100%;
+      font-weight: bold;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #1d4ed8;
+    }
+
+    .form-note {
+      margin-top: 1rem;
+    }
+
+    .form-note a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Judge Login</h2>
+    <form id="loginForm" class="form-card">
+      <label for="userId">Judge ID</label>
+      <input type="text" id="userId" name="userId" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required />
+
+      <button type="submit" class="btn">Login</button>
+      <p id="loginError" style="color:red;margin-top:10px;"></p>
+    </form>
+    <p class="form-note">
+      Not registered? <a href="register.html">Create an account</a><br>
+      <a href="login.html" style="color:#2563eb;">← Back to Home</a>
+    </p>
+  </div>
+  <script src="auth.js"></script>
+</body>
+</html>

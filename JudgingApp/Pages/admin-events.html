@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Events</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      font-family: 'Segoe UI', sans-serif;
+      padding-top: 100px;
+      min-height: 100vh;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .nav a {
+      color: white;
+      margin-left: 20px;
+      text-decoration: none;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    form {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      background: #ffd700;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .event-list {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .event-item {
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 10px;
+    }
+
+    .event-item input[type="text"], .event-item input[type="date"] {
+      width: auto;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .event-item .btn {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">The Adjudicators</div>
+    <div class="nav">
+      <a href="admin-dashboard.html">Dashboard</a>
+      <a href="login.html" onclick="localStorage.clear()">Logout</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <h2>Event Manager</h2>
+
+    <form id="eventForm">
+      <input type="text" id="eventName" placeholder="Event Name" required>
+      <input type="date" id="eventDate" required>
+      <button type="submit" class="btn">Add Event</button>
+    </form>
+
+    <div id="eventsContainer" class="event-list"></div>
+  </div>
+
+  <script>
+    const eventForm = document.getElementById("eventForm");
+    const eventsContainer = document.getElementById("eventsContainer");
+
+    eventForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("eventName").value;
+      const date = document.getElementById("eventDate").value;
+
+      const res = await fetch("http://localhost:3000/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, date }),
+      });
+
+      if (res.ok) {
+        loadEvents();
+        eventForm.reset();
+      } else {
+        alert("Error adding event");
+      }
+    });
+
+    async function loadEvents() {
+      const res = await fetch("http://localhost:3000/api/events");
+      const events = await res.json();
+      eventsContainer.innerHTML = "";
+
+      events.forEach(event => {
+        const div = document.createElement("div");
+        div.className = "event-item";
+        div.innerHTML = `
+          <input type="text" value="${event.name}" id="name-${event.id}">
+          <input type="date" value="${event.date?.split('T')[0]}" id="date-${event.id}">
+          <button class="btn" onclick="updateEvent(${event.id})">Save</button>
+          <button class="btn" onclick="deleteEvent(${event.id})">Delete</button>
+        `;
+        eventsContainer.appendChild(div);
+      });
+    }
+
+    async function updateEvent(id) {
+      const name = document.getElementById(`name-${id}`).value;
+      const date = document.getElementById(`date-${id}`).value;
+
+      const res = await fetch(`http://localhost:3000/api/events/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, date }),
+      });
+
+      if (res.ok) loadEvents();
+      else alert("Error updating event");
+    }
+
+    async function deleteEvent(id) {
+      const res = await fetch(`http://localhost:3000/api/events/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) loadEvents();
+      else alert("Error deleting event");
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
