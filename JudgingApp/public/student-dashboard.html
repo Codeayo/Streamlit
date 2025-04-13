@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 100px;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 15px 30px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .header__logo {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .header__nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+
+    .dashboard {
+      width: 90%;
+      max-width: 800px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 20px;
+      border-radius: 10px;
+      color: #fff;
+    }
+
+    .project-card {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+    }
+
+    .feedback {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+
+    .feedback p {
+      margin: 0.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header__logo">The Adjudicators</div>
+    <nav class="header__nav">
+      <a href="index.html">Home</a>
+      <a href="login.html" onclick="localStorage.clear()">Logout</a>
+    </nav>
+  </header>
+
+  <div class="dashboard">
+    <h2>Your Submitted Projects</h2>
+    <div id="projectContainer"></div>
+  </div>
+
+  <script>
+    const student = JSON.parse(localStorage.getItem("user"));
+    if (!student || !student.id) {
+      alert("You must be logged in as a student.");
+      window.location.href = "student.html";
+    }
+
+    async function fetchStudentProjects() {
+      const res = await fetch(`http://localhost:3000/api/projects/student/${student.id}`);
+      const data = await res.json();
+      const container = document.getElementById("projectContainer");
+
+      if (data.length === 0) {
+        container.innerHTML = "<p>You haven't submitted any projects yet.</p>";
+        return;
+      }
+
+      data.forEach(project => {
+        const card = document.createElement("div");
+        card.className = "project-card";
+
+        let feedbackHtml = "";
+        if (project.reviews && project.reviews.length > 0) {
+          feedbackHtml = project.reviews.map(r => `
+            <div class="feedback">
+              <p><strong>Judge:</strong> ${r.judge_id}</p>
+              <p><strong>Score:</strong> ${r.score}</p>
+              <p><strong>Feedback:</strong> ${r.feedback}</p>
+            </div>
+          `).join("");
+        } else {
+          feedbackHtml = "<p>No feedback yet.</p>";
+        }
+
+        card.innerHTML = `
+          <h3>${project.title}</h3>
+          <p><strong>Description:</strong> ${project.description}</p>
+          <div>${feedbackHtml}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    fetchStudentProjects();
+  </script>
+</body>
+</html>

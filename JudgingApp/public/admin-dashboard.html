@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 120px;
+      min-height: 100vh;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 20px 40px;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .header__logo {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .header__nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 30px;
+      font-size: 16px;
+    }
+
+    .dashboard {
+      width: 90%;
+      max-width: 900px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      font-size: 28px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 25px;
+      border-radius: 15px;
+      backdrop-filter: blur(8px);
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-5px);
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header__logo">The Adjudicators</div>
+    <nav class="header__nav">
+      <a href="index.html">Home</a>
+      <a href="login.html" onclick="localStorage.clear()">Logout</a>
+    </nav>
+  </header>
+
+  <div class="dashboard">
+    <h2>Welcome, Admin</h2>
+    <div class="card-grid">
+      <div class="card" onclick="location.href='admin-events.html'">
+        <h3>Manage Events</h3>
+        <p>Create, edit, or delete judging events</p>
+      </div>
+      <div class="card" onclick="location.href='admin-judges.html'">
+        <h3>Manage Judges</h3>
+        <p>Assign judges to events and accounts</p>
+      </div>
+      <div class="card" onclick="location.href='admin-projects.html'">
+        <h3>Manage Projects</h3>
+        <p>Add or edit submitted student projects</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

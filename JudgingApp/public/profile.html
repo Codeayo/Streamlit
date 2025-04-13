@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f7971e, #ffd200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .profile-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background-color: #f7971e;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .note {
+      margin-top: 15px;
+      font-size: 14px;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-box">
+    <h2>Your Profile</h2>
+    <input type="text" id="name" placeholder="Full Name"/>
+    <input type="password" id="password" placeholder="New Password"/>
+    <button onclick="updateProfile()">Update</button>
+    <p id="msg" class="note"></p>
+  </div>
+
+  <script>
+    // Simulated user session (replace with actual login storage)
+    const user = JSON.parse(localStorage.getItem("user")) || null;
+    const isStudent = user && user.email;
+    const endpoint = isStudent ? "student" : "judge";
+
+    async function updateProfile() {
+      const name = document.getElementById("name").value;
+      const password = document.getElementById("password").value;
+
+      const res = await fetch(`http://localhost:3000/api/${endpoint}/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id || user.userId, name, password })
+      });
+
+      const data = await res.json();
+      document.getElementById("msg").textContent = data.message || "Update failed";
+    }
+  </script>
+</body>
+</html>
