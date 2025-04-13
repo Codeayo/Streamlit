@@ -227,7 +227,7 @@ app.put("/api/judge/update", async (req, res) => {
 
   const query = hash
     ? "UPDATE judges SET password = ? WHERE id = ?"
-    : "UPDATE judges SET id = id WHERE id = ?"; // no update if only name
+    : "UPDATE judges SET id = id WHERE id = ?";
 
   const params = hash ? [hash, id] : [id];
 
