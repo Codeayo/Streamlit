@@ -5,9 +5,10 @@ const cors = require("cors");
 const db = require("./db");
 const bcrypt = require("bcryptjs");
 
-const app = express();
+const app = express(); // ✅ THIS LINE IS CRITICAL
 app.use(cors());
 app.use(express.json());
+
 
 // ✅ Serve frontend
 app.use(express.static(path.join(__dirname, "public")));
