@@ -1,45 +1,50 @@
 CREATE TABLE IF NOT EXISTS events (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255),
-  date DATE
+  name VARCHAR(255) NOT NULL,
+  date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS students (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255),
-  email VARCHAR(255) UNIQUE,
-  password TEXT
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS judges (
   id VARCHAR(255) PRIMARY KEY,
-  password TEXT
+  password TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS projects (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255),
-  description TEXT,
-  event_id INT,
-  user_id INT,
-  FOREIGN KEY (event_id) REFERENCES events(id),
-  FOREIGN KEY (user_id) REFERENCES students(id)
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  event_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS judge_event (
   judge_id VARCHAR(255),
   event_id INT,
   PRIMARY KEY (judge_id, event_id),
-  FOREIGN KEY (judge_id) REFERENCES judges(id),
-  FOREIGN KEY (event_id) REFERENCES events(id)
+  FOREIGN KEY (judge_id) REFERENCES judges(id) ON DELETE CASCADE,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
   judge_id VARCHAR(255),
   project_id INT,
-  score INT,
+  score INT NOT NULL,
   feedback TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (judge_id, project_id),
-  FOREIGN KEY (judge_id) REFERENCES judges(id),
-  FOREIGN KEY (project_id) REFERENCES projects(id)
+  FOREIGN KEY (judge_id) REFERENCES judges(id) ON DELETE CASCADE,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
