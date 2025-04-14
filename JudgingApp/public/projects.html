@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Project</title>
+  <link rel="stylesheet" href="../Styles/styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      padding: 0 20px;
+    }
+
+    .form-container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .btn {
+      margin-top: 20px;
+      background-color: #43cea2;
+      color: white;
+      padding: 12px;
+      border: none;
+      width: 100%;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #2f987c;
+    }
+  </style>
+</head>
+<body>
+  <a href="student-dashboard.html" style="
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: white;
+  color: #185a9d;
+  padding: 8px 15px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+">
+  ← Home
+</a>
+
+  <div class="form-container">
+    <h2>Submit Your Project</h2>
+    <form id="projectForm">
+      <label for="title">Project Title</label>
+      <input type="text" id="title" name="title" required>
+
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="5" required></textarea>
+
+      <label for="eventId">Event ID</label>
+      <input type="number" id="eventId" name="eventId" required>
+
+      <button type="submit" class="btn">Submit Project</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("projectForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const eventId = document.getElementById("eventId").value;
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!user || !user.id) {
+        alert("Please log in first.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const response = await fetch("http://localhost:3000/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          eventId,
+          userId: user.id
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Project submission failed.");
+      } else {
+        alert("Project submitted successfully!");
+        window.location.href = "student-dashboard.html";
+      }
+    });
+  </script>
+</body>
+</html>

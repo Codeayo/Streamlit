@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leaderboard</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      color: #fff;
+      padding: 50px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 30px;
+    }
+    table {
+      width: 80%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: white;
+      color: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    th, td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background-color: #0099cc;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏆 Project Leaderboard</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Project Title</th>
+        <th>Average Score</th>
+        <th>Event</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody">
+      <!-- JavaScript will inject rows here -->
+    </tbody>
+  </table>
+
+  <script>
+    async function loadLeaderboard() {
+      const res = await fetch("http://localhost:3000/api/leaderboard");
+      const data = await res.json();
+      const tbody = document.getElementById("leaderboardBody");
+      data.forEach((project, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${project.title}</td>
+          <td>${project.avg_score.toFixed(2)}</td>
+          <td>${project.event_name}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    loadLeaderboard();
+  </script>
+</body>
+</html>

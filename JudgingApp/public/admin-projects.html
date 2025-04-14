@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Projects</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding-top: 100px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .nav a {
+      color: white;
+      margin-left: 20px;
+      text-decoration: none;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 900px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      margin-bottom: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    .btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #ffd700;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .project-list {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .project-item {
+      margin-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">The Adjudicators</div>
+    <div class="nav">
+      <a href="admin-dashboard.html">Dashboard</a>
+      <a href="login.html" onclick="localStorage.clear()">Logout</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <h2>Project Manager</h2>
+
+    <form id="projectForm">
+      <input type="text" id="title" placeholder="Project Title" required>
+      <textarea id="description" placeholder="Description" rows="3" required></textarea>
+      <select id="eventId"></select>
+      <input type="number" id="studentId" placeholder="Student ID" required>
+      <button class="btn" type="submit">Add Project</button>
+    </form>
+
+    <div id="projectList" class="project-list"></div>
+  </div>
+
+  <script>
+    async function loadProjects() {
+      const res = await fetch("http://localhost:3000/api/projects");
+      const projects = await res.json();
+      const list = document.getElementById("projectList");
+      list.innerHTML = "";
+
+      projects.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "project-item";
+        div.innerHTML = `
+          <strong>${p.title}</strong> — ${p.description}<br>
+          Event: ${p.event_id} | Student: ${p.user_id}
+          <button class="btn" onclick="deleteProject(${p.id})">Delete</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function loadEvents() {
+      const res = await fetch("http://localhost:3000/api/events");
+      const events = await res.json();
+      const eventSelect = document.getElementById("eventId");
+      eventSelect.innerHTML = "";
+
+      events.forEach(e => {
+        const option = document.createElement("option");
+        option.value = e.id;
+        option.textContent = e.name;
+        eventSelect.appendChild(option);
+      });
+    }
+
+    document.getElementById("projectForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const eventId = document.getElementById("eventId").value;
+      const studentId = document.getElementById("studentId").value;
+
+      const res = await fetch("http://localhost:3000/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, event_id: eventId, user_id: studentId }),
+      });
+
+      if (res.ok) {
+        loadProjects();
+        e.target.reset();
+      } else {
+        alert("Failed to add project");
+      }
+    });
+
+    async function deleteProject(id) {
+      const res = await fetch(`http://localhost:3000/api/projects/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) loadProjects();
+      else alert("Failed to delete project");
+    }
+
+    loadEvents();
+    loadProjects();
+  </script>
+</body>
+</html>
