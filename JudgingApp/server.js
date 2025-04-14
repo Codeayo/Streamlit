@@ -1,27 +1,40 @@
-// ✅ Setup at the top
+require("dotenv").config(); // Load env vars
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
-const db = require("./db");
+const mysql = require("mysql2");
 const bcrypt = require("bcryptjs");
 
-const app = express(); // 🔥 this is the missing part
+const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Database connection using Railway's DATABASE_URL
+const db = mysql.createConnection(process.env.DATABASE_URL);
+db.connect(err => {
+  if (err) {
+    console.error("❌ Database connection failed:", err.stack);
+    return;
+  }
+  console.log("✅ Connected to MySQL database");
+});
 
-// ✅ Serve frontend
+// Promise wrapper
+const dbPromise = db.promise();
+
+// Serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ✅ ROUTES START HERE
+// ROUTES
 
 app.post("/api/student/login", async (req, res) => {
   const { email, password } = req.body;
   try {
-    const [rows] = await db.promise().query("SELECT * FROM students WHERE email = ?", [email]);
+    const [rows] = await dbPromise.query("SELECT * FROM students WHERE email = ?", [email]);
     if (rows.length === 0) return res.status(401).json({ error: "Invalid credentials" });
 
     const student = rows[0];
@@ -34,10 +47,60 @@ app.post("/api/student/login", async (req, res) => {
   }
 });
 
+app.post("/api/student/register", async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    const [existing] = await dbPromise.query("SELECT * FROM students WHERE email = ?", [email]);
+    if (existing.length > 0) return res.status(400).json({ error: "Email already registered" });
+
+    const hash = await bcrypt.hash(password, 10);
+    await dbPromise.query("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", [name, email, hash]);
+
+    res.status(201).json({ message: "Student registered" });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.put("/api/student/update", async (req, res) => {
+  const { id, name, password } = req.body;
+  const hash = password ? await bcrypt.hash(password, 10) : null;
+
+  const query = hash
+    ? "UPDATE students SET name = ?, password = ? WHERE id = ?"
+    : "UPDATE students SET name = ? WHERE id = ?";
+  const params = hash ? [name, hash, id] : [name, id];
+
+  await dbPromise.query(query, params);
+  res.json({ message: "Profile updated" });
+});
+
+app.get("/api/events", async (req, res) => {
+  const [rows] = await dbPromise.query("SELECT * FROM events ORDER BY date DESC");
+  res.json(rows);
+});
+
+app.post("/api/events", async (req, res) => {
+  const { name, date } = req.body;
+  await dbPromise.query("INSERT INTO events (name, date) VALUES (?, ?)", [name, date]);
+  res.json({ message: "Event created" });
+});
+
+app.put("/api/events/:id", async (req, res) => {
+  const { name, date } = req.body;
+  await dbPromise.query("UPDATE events SET name = ?, date = ? WHERE id = ?", [name, date, req.params.id]);
+  res.json({ message: "Event updated" });
+});
+
+app.delete("/api/events/:id", async (req, res) => {
+  await dbPromise.query("DELETE FROM events WHERE id = ?", [req.params.id]);
+  res.json({ message: "Event deleted" });
+});
+
 app.get("/api/events/judge/:judgeId", async (req, res) => {
   const { judgeId } = req.params;
   try {
-    const [rows] = await db.promise().query(`
+    const [rows] = await dbPromise.query(`
       SELECT e.id, e.name, e.date
       FROM events e
       JOIN judge_event je ON e.id = je.event_id
@@ -49,47 +112,85 @@ app.get("/api/events/judge/:judgeId", async (req, res) => {
   }
 });
 
+app.post("/api/judges", async (req, res) => {
+  const { id, password } = req.body;
+  const [exists] = await dbPromise.query("SELECT * FROM judges WHERE id = ?", [id]);
+  if (exists.length > 0) return res.status(400).json({ error: "Judge already exists" });
+
+  const hashed = await bcrypt.hash(password, 10);
+  await dbPromise.query("INSERT INTO judges (id, password) VALUES (?, ?)", [id, hashed]);
+  res.json({ message: "Judge created" });
+});
+
+app.delete("/api/judges/:id", async (req, res) => {
+  await dbPromise.query("DELETE FROM judges WHERE id = ?", [req.params.id]);
+  res.json({ message: "Judge deleted" });
+});
+
+app.post("/api/judge_event", async (req, res) => {
+  const { judgeId, eventId } = req.body;
+  await dbPromise.query(
+    "INSERT IGNORE INTO judge_event (judge_id, event_id) VALUES (?, ?)",
+    [judgeId, eventId]
+  );
+  res.json({ message: "Judge assigned" });
+});
+
+app.put("/api/judge/update", async (req, res) => {
+  const { id, name, password } = req.body;
+  const hash = password ? await bcrypt.hash(password, 10) : null;
+
+  const query = hash
+    ? "UPDATE judges SET password = ? WHERE id = ?"
+    : "UPDATE judges SET id = id WHERE id = ?";
+  const params = hash ? [hash, id] : [id];
+
+  await dbPromise.query(query, params);
+  res.json({ message: "Password updated" });
+});
+
+app.get("/api/judges", async (req, res) => {
+  const [rows] = await dbPromise.query("SELECT id FROM judges");
+  res.json(rows);
+});
+
+app.get("/api/projects", async (req, res) => {
+  const [rows] = await dbPromise.query("SELECT * FROM projects");
+  res.json(rows);
+});
+
+app.post("/api/projects", async (req, res) => {
+  const { title, description, event_id, user_id } = req.body;
+  await dbPromise.query(
+    "INSERT INTO projects (title, description, event_id, user_id) VALUES (?, ?, ?, ?)",
+    [title, description, event_id, user_id]
+  );
+  res.json({ message: "Project added" });
+});
+
+app.delete("/api/projects/:id", async (req, res) => {
+  await dbPromise.query("DELETE FROM projects WHERE id = ?", [req.params.id]);
+  res.json({ message: "Project deleted" });
+});
+
 app.get("/api/projects/event/:eventId", async (req, res) => {
   const { eventId } = req.params;
   try {
-    const [rows] = await db.promise().query("SELECT * FROM projects WHERE event_id = ?", [eventId]);
+    const [rows] = await dbPromise.query("SELECT * FROM projects WHERE event_id = ?", [eventId]);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Could not fetch projects" });
   }
 });
 
-app.post("/api/projects/review", async (req, res) => {
-  const { judgeId, projectId, score, feedback } = req.body;
-  try {
-    await db.promise().query(`
-      INSERT INTO reviews (judge_id, project_id, score, feedback)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE score = ?, feedback = ?
-    `, [judgeId, projectId, score, feedback, score, feedback]);
-
-    res.json({ message: "Review saved" });
-  } catch (err) {
-    res.status(500).json({ error: "Could not save review" });
-  }
-});
-
 app.get("/api/projects/student/:studentId", async (req, res) => {
   const { studentId } = req.params;
-
   try {
-    const [projects] = await db.promise().query(
-      "SELECT * FROM projects WHERE user_id = ?",
-      [studentId]
-    );
-
+    const [projects] = await dbPromise.query("SELECT * FROM projects WHERE user_id = ?", [studentId]);
     const projectIds = projects.map(p => p.id);
     if (projectIds.length === 0) return res.json([]);
 
-    const [reviews] = await db.promise().query(
-      "SELECT * FROM reviews WHERE project_id IN (?)",
-      [projectIds]
-    );
+    const [reviews] = await dbPromise.query("SELECT * FROM reviews WHERE project_id IN (?)", [projectIds]);
 
     const projectsWithReviews = projects.map(project => ({
       ...project,
@@ -102,95 +203,46 @@ app.get("/api/projects/student/:studentId", async (req, res) => {
   }
 });
 
-app.get("/api/events", async (req, res) => {
-  const [rows] = await db.promise().query("SELECT * FROM events ORDER BY date DESC");
-  res.json(rows);
-});
-
-app.post("/api/events", async (req, res) => {
-  const { name, date } = req.body;
-  await db.promise().query("INSERT INTO events (name, date) VALUES (?, ?)", [name, date]);
-  res.json({ message: "Event created" });
-});
-
-app.put("/api/events/:id", async (req, res) => {
-  const { name, date } = req.body;
-  await db.promise().query("UPDATE events SET name = ?, date = ? WHERE id = ?", [name, date, req.params.id]);
-  res.json({ message: "Event updated" });
-});
-
-app.delete("/api/events/:id", async (req, res) => {
-  await db.promise().query("DELETE FROM events WHERE id = ?", [req.params.id]);
-  res.json({ message: "Event deleted" });
-});
-
-app.get("/api/judges", async (req, res) => {
-  const [rows] = await db.promise().query("SELECT id FROM judges");
-  res.json(rows);
-});
-
-app.post("/api/judges", async (req, res) => {
-  const { id, password } = req.body;
-  const [exists] = await db.promise().query("SELECT * FROM judges WHERE id = ?", [id]);
-  if (exists.length > 0) return res.status(400).json({ error: "Judge already exists" });
-
-  const hashed = await bcrypt.hash(password, 10);
-  await db.promise().query("INSERT INTO judges (id, password) VALUES (?, ?)", [id, hashed]);
-  res.json({ message: "Judge created" });
-});
-
-app.delete("/api/judges/:id", async (req, res) => {
-  await db.promise().query("DELETE FROM judges WHERE id = ?", [req.params.id]);
-  res.json({ message: "Judge deleted" });
-});
-
-app.post("/api/judge_event", async (req, res) => {
-  const { judgeId, eventId } = req.body;
-  await db.promise().query(
-    "INSERT IGNORE INTO judge_event (judge_id, event_id) VALUES (?, ?)",
-    [judgeId, eventId]
-  );
-  res.json({ message: "Judge assigned" });
-});
-
-app.get("/api/projects", async (req, res) => {
-  const [rows] = await db.promise().query("SELECT * FROM projects");
-  res.json(rows);
-});
-
-app.post("/api/projects", async (req, res) => {
-  const { title, description, event_id, user_id } = req.body;
-  await db.promise().query(
-    "INSERT INTO projects (title, description, event_id, user_id) VALUES (?, ?, ?, ?)",
-    [title, description, event_id, user_id]
-  );
-  res.json({ message: "Project added" });
-});
-
-app.delete("/api/projects/:id", async (req, res) => {
-  await db.promise().query("DELETE FROM projects WHERE id = ?", [req.params.id]);
-  res.json({ message: "Project deleted" });
-});
-
-app.post("/api/student/register", async (req, res) => {
-  const { name, email, password } = req.body;
-
+app.get("/api/project/:id", async (req, res) => {
+  const { id } = req.params;
   try {
-    const [existing] = await db.promise().query("SELECT * FROM students WHERE email = ?", [email]);
-    if (existing.length > 0) return res.status(400).json({ error: "Email already registered" });
+    const [projectRows] = await dbPromise.query(`
+      SELECT p.*, e.name AS event_name
+      FROM projects p
+      JOIN events e ON p.event_id = e.id
+      WHERE p.id = ?
+    `, [id]);
+    if (projectRows.length === 0) return res.status(404).json({ error: "Project not found" });
 
-    const hash = await bcrypt.hash(password, 10);
-    await db.promise().query("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", [name, email, hash]);
+    const [reviews] = await dbPromise.query("SELECT * FROM reviews WHERE project_id = ?", [id]);
 
-    res.status(201).json({ message: "Student registered" });
+    res.json({
+      project: projectRows[0],
+      reviews: reviews
+    });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Could not fetch project details" });
+  }
+});
+
+app.post("/api/projects/review", async (req, res) => {
+  const { judgeId, projectId, score, feedback } = req.body;
+  try {
+    await dbPromise.query(`
+      INSERT INTO reviews (judge_id, project_id, score, feedback)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE score = ?, feedback = ?
+    `, [judgeId, projectId, score, feedback, score, feedback]);
+
+    res.json({ message: "Review saved" });
+  } catch (err) {
+    res.status(500).json({ error: "Could not save review" });
   }
 });
 
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    const [rows] = await db.promise().query(`
+    const [rows] = await dbPromise.query(`
       SELECT 
         p.title, 
         e.name AS event_name,
@@ -208,68 +260,14 @@ app.get("/api/leaderboard", async (req, res) => {
   }
 });
 
-app.put("/api/student/update", async (req, res) => {
-  const { id, name, password } = req.body;
-  const hash = password ? await bcrypt.hash(password, 10) : null;
-
-  const query = hash
-    ? "UPDATE students SET name = ?, password = ? WHERE id = ?"
-    : "UPDATE students SET name = ? WHERE id = ?";
-
-  const params = hash ? [name, hash, id] : [name, id];
-
-  await db.promise().query(query, params);
-  res.json({ message: "Profile updated" });
-});
-
-app.put("/api/judge/update", async (req, res) => {
-  const { id, name, password } = req.body;
-  const hash = password ? await bcrypt.hash(password, 10) : null;
-
-  const query = hash
-    ? "UPDATE judges SET password = ? WHERE id = ?"
-    : "UPDATE judges SET id = id WHERE id = ?";
-
-  const params = hash ? [hash, id] : [id];
-
-  await db.promise().query(query, params);
-  res.json({ message: "Password updated" });
-});
-
-app.get("/api/project/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const [projectRows] = await db.promise().query(`
-      SELECT p.*, e.name AS event_name
-      FROM projects p
-      JOIN events e ON p.event_id = e.id
-      WHERE p.id = ?
-    `, [id]);
-
-    if (projectRows.length === 0) return res.status(404).json({ error: "Project not found" });
-
-    const [reviews] = await db.promise().query(`
-      SELECT * FROM reviews WHERE project_id = ?
-    `, [id]);
-
-    res.json({
-      project: projectRows[0],
-      reviews: reviews
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Could not fetch project details" });
-  }
-});
-
 app.get("/api/admin/analytics", async (req, res) => {
   try {
-    const [[{ totalStudents }]] = await db.promise().query("SELECT COUNT(*) AS totalStudents FROM students");
-    const [[{ totalJudges }]] = await db.promise().query("SELECT COUNT(*) AS totalJudges FROM judges");
-    const [[{ totalEvents }]] = await db.promise().query("SELECT COUNT(*) AS totalEvents FROM events");
-    const [[{ totalProjects }]] = await db.promise().query("SELECT COUNT(*) AS totalProjects FROM projects");
+    const [[{ totalStudents }]] = await dbPromise.query("SELECT COUNT(*) AS totalStudents FROM students");
+    const [[{ totalJudges }]] = await dbPromise.query("SELECT COUNT(*) AS totalJudges FROM judges");
+    const [[{ totalEvents }]] = await dbPromise.query("SELECT COUNT(*) AS totalEvents FROM events");
+    const [[{ totalProjects }]] = await dbPromise.query("SELECT COUNT(*) AS totalProjects FROM projects");
 
-    const [[topEvent]] = await db.promise().query(`
+    const [[topEvent]] = await dbPromise.query(`
       SELECT e.name, COUNT(p.id) AS count
       FROM events e
       JOIN projects p ON e.id = p.event_id
@@ -278,7 +276,7 @@ app.get("/api/admin/analytics", async (req, res) => {
       LIMIT 1
     `);
 
-    const [[topProject]] = await db.promise().query(`
+    const [[topProject]] = await dbPromise.query(`
       SELECT p.title, AVG(r.score) AS avg_score
       FROM projects p
       JOIN reviews r ON r.project_id = p.id
@@ -300,7 +298,7 @@ app.get("/api/admin/analytics", async (req, res) => {
   }
 });
 
-// ✅ Start Server
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
